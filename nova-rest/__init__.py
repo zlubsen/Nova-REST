@@ -24,12 +24,14 @@ def create_app(test_config=None):
     except OSError:
         pass
 
+    status_comm = StatusPublishSubCommunication()
+
     hardwareDispatch = {
-        'servo1' : lambda: getServoStatus(1),
-        'servo2' : lambda: getServoStatus(2),
-        'servo3' : lambda: getServoStatus(3),
-        'servo4' : lambda: getServoStatus(4),
-        'servo5' : lambda: getServoStatus(5),
+        'servo1' : lambda: getServoStatus('servo1'),
+        'servo2' : lambda: getServoStatus('servo2'),
+        'servo3' : lambda: getServoStatus('servo3'),
+        'servo4' : lambda: getServoStatus('servo4'),
+        'servo5' : lambda: getServoStatus('servo5'),
         'ultrasound' : lambda: getUltraSoundStatus(),
         'camera' : lambda: getCameraStatus(),
         }
@@ -68,19 +70,20 @@ def create_app(test_config=None):
 
     def getServoStatus(servo_id):
         # return the servo angle for servo with id
-        # TODO get the status via zmq
-        placeholder_reply = {
-            "name": f"servo{servo_id}",
-            "angle": 90+servo_id
+        (id, angle) = status_comm.getStatus(servo_id)
+
+        reply = {
+            "name": f"{id}",
+            "angle": f"{angle}"
             }
         return json.dumps(placeholder_reply)
 
     def getUltraSoundStatus():
         # return the measured distance (time, distance)
-        # TODO get the status via zmq
-        placeholder_reply = {
-            "name":"ultrasound",
-            "distance":8
+        (id, distance) = status_comm.getStatus(servo_id)
+        reply = {
+            "name":f"{id}",
+            "distance":f"{distance}"
             }
         return json.dumps(placeholder_reply)
 

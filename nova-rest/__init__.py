@@ -1,7 +1,8 @@
 import os
-
 from flask import Flask
 import json
+import zmq
+#from communication.zmq_status_sub_communication import StatusPublishSubCommunication
 
 def create_app(test_config=None):
     # create and configure the app
@@ -76,16 +77,16 @@ def create_app(test_config=None):
             "name": f"{id}",
             "angle": f"{angle}"
             }
-        return json.dumps(placeholder_reply)
+        return json.dumps(reply)
 
     def getUltraSoundStatus():
         # return the measured distance (time, distance)
-        (id, distance) = status_comm.getStatus(servo_id)
+        (id, distance) = status_comm.getStatus('ultrasound')
         reply = {
             "name":f"{id}",
             "distance":f"{distance}"
             }
-        return json.dumps(placeholder_reply)
+        return json.dumps(reply)
 
     def getCameraStatus():
         # return the image with detected feature highlights
@@ -95,9 +96,9 @@ def create_app(test_config=None):
     def getPIDsetting(pid_id):
         # TODO get the status via zmq
         placeholder_reply = {
-            "Kp":0,1
-            "Ki":0,2
-            "Kd":0,3
+            "Kp":0.1,
+            "Ki":0.2,
+            "Kd":0.3
             }
         return json.dump(placeholder_reply)
 
@@ -106,3 +107,16 @@ def create_app(test_config=None):
         pass
 
     return app
+
+class StatusPublishSubCommunication:
+    def __init__(self):
+        context = zmq.Context()
+        self.socket = context.socket(zmq.SUB)
+
+        self.socket.connect("tcp://localhost:8888")
+        self.socket.setsockopt(zmq.SUBSCRIBE, ''.encode())
+
+    def getStatus(self, id):
+        assets = self.socket.recv_pyobj()
+
+        return (id, assets[id])

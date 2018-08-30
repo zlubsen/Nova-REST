@@ -40,7 +40,7 @@ def create_app(test_config=None):
         }
 
     configDispatch = {
-        'uss_pid' : lambda: getPIDsetting('uss_pid'),
+        'distance_pid' : lambda: getPIDsetting('distance_pid'),
         'facedetection_pid_x': lambda: getPIDsetting('facedetection_pid_x'),
         'facedetection_pid_y': lambda: getPIDsetting('facedetection_pid_y'),
         }

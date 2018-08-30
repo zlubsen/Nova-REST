@@ -1,5 +1,7 @@
 import os
 from flask import Flask
+from flask import Response
+from flask import request
 import json
 import zmq
 #from communication.zmq_status_sub_communication import StatusPublishSubCommunication
@@ -53,10 +55,14 @@ def create_app(test_config=None):
         if id in hardwareDispatch:
             return hardwareDispatch[id]()
         else:
-            reply = {
+            body = {
+                "id":"f{id}",
                 "error":"Resource not found!"
             }
-            return json.dumps(reply)
+            resp = Response(json.dumps(body))
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
+
 
     @app.route('/config/<string:id>', methods=('GET','POST'))
     def config(id):
@@ -65,42 +71,64 @@ def create_app(test_config=None):
             Ki = request.form["Ki"]
             Kd = request.form["Kd"]
             setPIDsetting(id, Kp, Ki, Kd)
-        else:
+        elif request.method is 'GET':
             if id in configDispatch:
                 return configDispatch[id]()
+        else:
+            body = {
+                "id":"f{id}",
+                "error":"Config item not found!"
+            }
+            resp = Response(json.dumps(body))
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
 
     def getServoStatus(servo_id):
         # return the servo angle for servo with id
+        #(id, (angle,arg2,arg3)) = status_comm.getStatus(servo_id)
         (id, angle) = status_comm.getStatus(servo_id)
 
-        reply = {
-            "name": f"{id}",
-            "angle": f"{angle}"
+        body = {
+            "id": f"{id}",
+            "value": f"{angle}"
             }
-        return json.dumps(reply)
+        resp = Response(json.dumps(body))
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
 
     def getUltraSoundStatus():
         # return the measured distance (time, distance)
+        #(id, (distance,arg2,arg3)) = status_comm.getStatus('ultrasound')
         (id, distance) = status_comm.getStatus('ultrasound')
-        reply = {
-            "name":f"{id}",
-            "distance":f"{distance}"
+        body = {
+            "id":f"{id}",
+            "value":f"{distance}"
             }
-        return json.dumps(reply)
+        resp = Response(json.dumps(body))
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
 
     def getCameraStatus():
         # return the image with detected feature highlights
         # TODO get the status via zmq
-        return 'some image'
+        body = {
+            "content":"some image"
+            }
+        resp = Response(json.dumps(body))
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
 
     def getPIDsetting(pid_id):
         # TODO get the status via zmq
-        placeholder_reply = {
+        body = {
+            "id":f"{pid_id}",
             "Kp":0.1,
             "Ki":0.2,
             "Kd":0.3
             }
-        return json.dump(placeholder_reply)
+        resp = Response(json.dumps(body))
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
 
     def setPIDsetting(pid_id):
         # TODO send the new status via zmq

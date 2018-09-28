@@ -148,3 +148,10 @@ class StatusPublishSubCommunication:
         assets = self.socket.recv_pyobj()
 
         return (id, assets[id])
+
+class APICommandReqCommunication:
+    def __init__(self):
+        context = zmq.Context()
+        self.socket = context.socket(zmq.REQ)
+
+        self.socket.connect("tcp://localhost:8889")

@@ -28,6 +28,7 @@ def create_app(test_config=None):
         pass
 
     status_comm = StatusPublishSubCommunication()
+    api_command_comm = APICommandReqCommunication()
 
     hardwareDispatch = {
         'servo1' : lambda: getServoStatus('servo1'),
@@ -56,13 +57,12 @@ def create_app(test_config=None):
             return hardwareDispatch[id]()
         else:
             body = {
-                "id":"f{id}",
+                "id":f"{id}",
                 "error":"Resource not found!"
             }
             resp = Response(json.dumps(body))
             resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp
-
 
     @app.route('/config/<string:id>', methods=('GET','POST'))
     def config(id):
@@ -76,12 +76,25 @@ def create_app(test_config=None):
                 return configDispatch[id]()
         else:
             body = {
-                "id":"f{id}",
+                "id":f"{id}",
                 "error":"Config item not found!"
             }
             resp = Response(json.dumps(body))
             resp.headers['Access-Control-Allow-Origin'] = '*'
             return resp
+
+    @app.route('/test/<string:id>', methods=('GET',))
+    def test(id):
+        id = int(id)
+        cmd = (0,0,int(id),0,0)
+        api_command_comm.sendCommand(cmd)
+
+        body = {
+            "id":f"{cmd}",
+            "message":"Seems to have gone well!"
+        }
+        resp = Response(json.dumps(body))
+        return resp
 
     def getServoStatus(servo_id):
         # return the servo angle for servo with id
@@ -149,9 +162,20 @@ class StatusPublishSubCommunication:
 
         return (id, assets[id])
 
+#TODO revisit send/receive flags and poller to make more robust (cmds must be ack'd)
 class APICommandReqCommunication:
-    def __init__(self):
+    def __init__(self, uri="tcp://localhost:8889"):
+        self.__setupZMQ(uri)
+
+    def __setupZMQ(self, uri):
         context = zmq.Context()
         self.socket = context.socket(zmq.REQ)
+        self.socket.connect(uri)
 
-        self.socket.connect("tcp://localhost:8889")
+    def sendCommand(self, cmd):
+        self.socket.send_pyobj(cmd, flags=zmq.NOBLOCK)
+        try:
+            ack_message = self.socket.recv_pyobj()
+            return ack_message
+        except zmq.ZMQError:
+            return None

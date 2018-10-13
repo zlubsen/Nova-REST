@@ -99,15 +99,26 @@ def create_app(test_config=None):
     def getServoStatus(servo_id):
         # return the servo angle for servo with id
         #(id, (angle,arg2,arg3)) = status_comm.getStatus(servo_id)
-        (id, angle) = status_comm.getStatus(servo_id)
+        asset = = status_comm.getStatus(servo_id)
+        if asset != None:
+            (id, angle) = asset
 
-        body = {
-            "id": f"{id}",
-            "value": f"{angle}"
-            }
-        resp = Response(json.dumps(body))
-        resp.headers['Access-Control-Allow-Origin'] = '*'
-        return resp
+            body = {
+                "id": f"{id}",
+                "value": f"{angle}"
+                }
+            resp = Response(json.dumps(body))
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
+        else:
+            # TODO handle others similar; set HTTP Response code 404 or so
+            body = {
+                "id": f"{servo_id}",
+                "error": "No status for this id."
+                }
+            resp = Response(json.dumps(body))
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp
 
     def getUltraSoundStatus():
         # return the measured distance (time, distance)
@@ -159,8 +170,10 @@ class StatusPublishSubCommunication:
 
     def getStatus(self, id):
         assets = self.socket.recv_pyobj()
-
-        return (id, assets[id])
+        if id in assets:
+            return (id, assets[id])
+        else:
+            return None
 
 #TODO revisit send/receive flags and poller to make more robust (cmds must be ack'd)
 class APICommandReqCommunication:
